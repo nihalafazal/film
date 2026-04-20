@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinephile - For Film Lovers</title>
+    <meta name="description" content="Discover, discuss, and dive deep into cinematic masterpieces with our AI film critic.">
+    <!-- Google Fonts for typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-film"></i> Cinephile
+        </div>
+        <ul class="nav-links">
+            <li><a href="#hero" class="active">Home</a></li>
+            <li><a href="#gallery">Featured</a></li>
+            <li><a href="#reviews">Reviews</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero" id="hero">
+        <div class="hero-content">
+            <h1>Experience Cinema <span class="highlight">Like Never Before</span></h1>
+            <p>Dive deep into film theory, discover hidden gems, and discuss masterpieces with our dedicated AI Film Critic.</p>
+            <button class="cta-button" onclick="openChat()">Talk to AI Critic <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+        <div class="hero-overlay"></div>
+    </header>
+
+    <!-- Gallery Section -->
+    <section class="gallery-section" id="gallery">
+        <h2>Curated Masterpieces</h2>
+        <div class="gallery-grid">
+            <!-- Film 1 -->
+            <div class="film-card">
+                <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Cinematic Scenery">
+                <div class="film-info">
+                    <h3>The Art of Lighting</h3>
+                    <p>Exploring cinematography</p>
+                </div>
+            </div>
+            <!-- Film 2 -->
+            <div class="film-card">
+                <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Vintage Camera">
+                <div class="film-info">
+                    <h3>Golden Age</h3>
+                    <p>Classic Hollywood overview</p>
+                </div>
+            </div>
+            <!-- Film 3 -->
+            <div class="film-card">
+                <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Film Reel">
+                <div class="film-info">
+                    <h3>Indie Darlings</h3>
+                    <p>Modern independent cinema</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Floating Chatbot Widget -->
+    <div class="chatbot-container" id="chatbot">
+        <div class="chat-header">
+            <div class="chat-title">
+                <i class="fa-solid fa-clapperboard"></i> Director Bot
+            </div>
+            <button class="close-chat" onclick="closeChat()"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot">
+                <div class="message-content">
+                    Greetings, fellow cinephile! I am your AI Film Critic. What movie shall we discuss today?
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="user-input" placeholder="Ask about a movie, director..." onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Floating Trigger Button -->
+    <button class="chat-trigger" id="chat-trigger" onclick="openChat()">
+        <i class="fa-solid fa-message"></i>
+    </button>
+
+    <script>
+        // Chatbot UI Toggle Logic
+        const chatbot = document.getElementById('chatbot');
+        const chatTrigger = document.getElementById('chat-trigger');
+        const userInput = document.getElementById('user-input');
+        const chatMessages = document.getElementById('chat-messages');
+
+        function openChat() {
+            chatbot.style.display = 'flex';
+            chatbot.style.animation = 'slideUp 0.3s ease forwards';
+            chatTrigger.style.display = 'none';
+        }
+
+        function closeChat() {
+            chatbot.style.animation = 'slideDown 0.3s ease forwards';
+            setTimeout(() => {
+                chatbot.style.display = 'none';
+                chatTrigger.style.display = 'flex';
+                chatTrigger.style.animation = 'scaleIn 0.3s ease forwards';
+            }, 300);
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message to UI
+            appendMessage(message, 'user');
+            userInput.value = '';
+
+            // Add typing indicator
+            const typingId = 'typing-' + Date.now();
+            appendTypingIndicator(typingId);
+
+            try {
+                // Send to Flask backend
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: 'user_session_1' // Simple static session id
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Remove typing indicator
+                removeTypingIndicator(typingId);
+
+                if (data.status === 'success') {
+                    // Render markdown gracefully (primitive replacement for simplicity)
+                    let formattedText = data.response
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>');
+                    appendMessage(formattedText, 'bot', true);
+                } else {
+                    appendMessage("Error: " + data.error, 'bot');
+                }
+
+            } catch (err) {
+                removeTypingIndicator(typingId);
+                appendMessage("Oops, the projector broke! Cannot connect to server.", 'bot');
+            }
+        }
+
+        function appendMessage(text, sender, isHTML = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            if (isHTML) {
+                contentDiv.innerHTML = text;
+            } else {
+                contentDiv.textContent = text;
+            }
+
+            msgDiv.appendChild(contentDiv);
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendTypingIndicator(id) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message bot typing';
+            msgDiv.id = id;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+
+            msgDiv.appendChild(contentDiv);
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator(id) {
+            const indicator = document.getElementById(id);
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+    </script>
+</body>
+</html>
